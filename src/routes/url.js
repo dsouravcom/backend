@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const axios = require ("axios");
+const logger = require("../logger.js");
 
 router.post('/', async (req, res)=>{
     var url = req.query.url;
@@ -17,13 +18,14 @@ router.post('/', async (req, res)=>{
       .then(response => {
           // Sending back the full url
           res.send(response.request.res.responseUrl);
+          logger.info("Hostname -> "+finalUrl+", Status code -> "+ response.status);
       })
       .catch(error => {
-          console.error("Hostname -> "+error.hostname+", Error code -> "+ error.code);
+          logger.warn("Hostname -> "+finalUrl+", Error code -> "+ error.code);
           res.send("No website live on this URL");
       });
     }catch(error){
-      console.log(error);
+      logger.log(error);
     }
   })
 

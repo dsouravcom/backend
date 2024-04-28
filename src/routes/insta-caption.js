@@ -2,6 +2,7 @@ const express = require('express');
 const cheerio = require('cheerio');
 const router = express.Router();
 const axios = require ("axios");
+const logger = require("../logger.js");
 
 
 router.post('/', async (req, res) => {
@@ -24,10 +25,11 @@ router.post('/', async (req, res) => {
 
     // Send the extracted metadata as JSON response
     res.json({ result });
-    // console.log("caption - " + description);
+    logger.info('Caption extracted successfully', url);
   } catch (error) {
     console.error('Error:', error.message);
     res.status(500).json({ error: 'Internal Server Error' });
+    logger.error('Error extracting caption', error.message);
   }
 });
 
