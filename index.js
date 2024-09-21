@@ -5,6 +5,7 @@ require('dotenv').config();
 // import routes
 const instaRoute = require("./src/routes/insta-caption.js");
 const urlRoute = require("./src/routes/url.js");
+const decodeQrRoute = require("./src/routes/decodeQr.js");
 
 const app = express();
 const port = 5000;
@@ -37,6 +38,7 @@ app.use((req, res, next) => {
 
 app.use('/get-caption',instaRoute);
 app.use('/expand-url', urlRoute);
+app.use('/decode-qr', decodeQrRoute);
 
 app.get('/test',(req, res)=>{
   res.send("servre is up.");
