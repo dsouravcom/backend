@@ -17,12 +17,12 @@ router.post('/', async (req, res)=>{
       await axios.head(finalUrl, { maxRedirects: 5 })
       .then(response => {
           // Sending back the full url
-          res.send(response.request.res.responseUrl);
+          res.json({url:response.request.res.responseUrl});
           logger.info("Hostname -> "+finalUrl+", Status code -> "+ response.status);
       })
       .catch(error => {
           logger.warn("Hostname -> "+finalUrl+", Error code -> "+ error.code);
-          res.send("No website live on this URL");
+          res.status(404).json({message: "No website live on this URL"});
       });
     }catch(error){
       logger.log(error);
