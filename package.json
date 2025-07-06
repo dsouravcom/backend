@@ -1,29 +1,38 @@
 {
-  "name": "multiple-server",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "dev": "nodemon index.js",
-    "start": "node index.js"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "@logtail/node": "^0.4.21",
-    "@logtail/winston": "^0.4.21",
-    "axios": "^1.6.8",
-    "cheerio": "^1.0.0-rc.12",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "jimp": "^1.6.0",
-    "jsqr": "^1.4.0",
-    "multer": "^1.4.5-lts.1",
-    "winston": "^3.13.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.0"
-  }
+    "name": "multiple-backend-new",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "dev": "nodemon src/index.ts",
+        "build": "tsc",
+        "start": "node dist/index.js"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "commonjs",
+    "dependencies": {
+        "@logtail/node": "^0.5.5",
+        "@logtail/winston": "^0.5.5",
+        "axios": "^1.10.0",
+        "cheerio": "^1.1.0",
+        "compression": "^1.8.0",
+        "cors": "^2.8.5",
+        "dotenv": "^17.0.1",
+        "express": "^5.1.0",
+        "express-rate-limit": "^7.5.1",
+        "helmet": "^8.1.0",
+        "isbot": "^5.1.28",
+        "winston": "^3.17.0"
+    },
+    "devDependencies": {
+        "@types/compression": "^1.8.1",
+        "@types/cors": "^2.8.19",
+        "@types/express": "^5.0.3",
+        "@types/node": "^24.0.10",
+        "nodemon": "^3.1.10",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.8.3"
+    }
 }
