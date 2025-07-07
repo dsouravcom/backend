@@ -33,8 +33,14 @@ const corsOptions: CorsOptions = {
         origin: string | undefined,
         callback: (error: Error | null, allow?: boolean) => void
     ) => {
+        // Allow requests with no origin (mobile apps, Postman, etc.) OR from root path
+        if (!origin) {
+            callback(null, true);
+            return;
+        }
+        
         // Check if the origin is allowed
-        if (!origin || (allowedOrigins && allowedOrigins.includes(origin))) {
+        if (allowedOrigins && allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
             callback(new Error("Not allowed by CORS -> " + origin));
@@ -60,7 +66,7 @@ app.use(compression());
 
 // Declaring the routes ---------------------------------------------------------------------
 app.get("/", (req: Request, res: Response) => {
-    res.json({ message: "Welcome to the multiple API server!" });
+    res.status(200).json({ message: "Welcome to the multiple API server!" });
 });
 // Routes
 app.use("/api", router);
