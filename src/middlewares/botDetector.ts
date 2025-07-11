@@ -37,13 +37,6 @@ const botDetector = (req: Request, res: Response, next: NextFunction): void => {
             if (customBotHeader === expectedBotToken) {
                 // Allow access only to root endpoint
                 if (req.originalUrl === "/" || req.path === "/") {
-                    logger.info("✅ Authorized bot detected - Root access granted", {
-                        userAgent: userAgent,
-                        ip: req.ip || req.socket?.remoteAddress,
-                        method: req.method,
-                        url: req.originalUrl,
-                        botHeader: "Present (hidden for security)",
-                    });
                     
                     console.log("🤖 AUTHORIZED BOT - Root access granted");
                     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
