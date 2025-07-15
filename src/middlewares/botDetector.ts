@@ -12,9 +12,10 @@ const botDetector = (req: Request, res: Response, next: NextFunction): void => {
     try {
         // Get user agent from request headers
         const userAgent = req.get("User-Agent") || "";
-        
+
         // Get custom header for authorized bots
-        const customBotHeader = req.get("X-Authorized-Bot") || req.get("x-authorized-bot");
+        const customBotHeader =
+            req.get("X-Authorized-Bot") || req.get("x-authorized-bot");
         const expectedBotToken = process.env.AUTHORIZED_BOT_TOKEN;
 
         // Allow Postman for API testing
@@ -25,6 +26,10 @@ const botDetector = (req: Request, res: Response, next: NextFunction): void => {
                 ip: req.ip || req.socket?.remoteAddress,
                 method: req.method,
                 url: req.originalUrl,
+                headers: {
+                    "x-forwarded-for": req.get("X-Forwarded-For"),
+                    "x-real-ip": req.get("X-Real-IP"),
+                },
             });
             return next();
         }
@@ -37,40 +42,61 @@ const botDetector = (req: Request, res: Response, next: NextFunction): void => {
             if (customBotHeader === expectedBotToken) {
                 // Allow access only to root endpoint
                 if (req.originalUrl === "/" || req.path === "/") {
-                    
                     console.log("🤖 AUTHORIZED BOT - Root access granted");
-                    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                    console.log(
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                    );
                     console.log(`Timestamp: ${new Date().toISOString()}`);
-                    console.log(`IP Address: ${req.ip || req.socket?.remoteAddress}`);
+                    console.log(
+                        `IP Address: ${req.ip || req.socket?.remoteAddress}`
+                    );
                     console.log(`User Agent: ${userAgent}`);
                     console.log(`Method: ${req.method}`);
                     console.log(`URL: ${req.originalUrl}`);
                     console.log(`Status: AUTHORIZED - Root access only`);
-                    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-                    
+                    console.log(
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                    );
+
                     return next();
                 } else {
                     // Authorized bot trying to access non-root endpoint
-                    logger.warn("🚫 Authorized bot blocked - Non-root endpoint access attempt", {
-                        userAgent: userAgent,
-                        ip: req.ip || req.socket?.remoteAddress,
-                        method: req.method,
-                        url: req.originalUrl,
-                        attemptedEndpoint: req.originalUrl,
-                    });
+                    logger.warn(
+                        "🚫 Authorized bot blocked - Non-root endpoint access attempt",
+                        {
+                            userAgent: userAgent,
+                            ip: req.ip || req.socket?.remoteAddress,
+                            method: req.method,
+                            url: req.originalUrl,
+                            attemptedEndpoint: req.originalUrl,
+                            headers: {
+                                "x-forwarded-for": req.get("X-Forwarded-For"),
+                                "x-real-ip": req.get("X-Real-IP"),
+                            },
+                        }
+                    );
 
-                    console.log("🤖 AUTHORIZED BOT BLOCKED - Non-root access attempt");
-                    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                    console.log(
+                        "🤖 AUTHORIZED BOT BLOCKED - Non-root access attempt"
+                    );
+                    console.log(
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                    );
                     console.log(`Timestamp: ${new Date().toISOString()}`);
-                    console.log(`IP Address: ${req.ip || req.socket?.remoteAddress}`);
+                    console.log(
+                        `IP Address: ${req.ip || req.socket?.remoteAddress}`
+                    );
                     console.log(`User Agent: ${userAgent}`);
                     console.log(`Attempted URL: ${req.originalUrl}`);
                     console.log(`Status: BLOCKED - Only root endpoint allowed`);
-                    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                    console.log(
+                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                    );
 
                     res.status(403).json({
                         error: "Access Denied",
-                        message: "Authorized bots can only access the root endpoint",
+                        message:
+                            "Authorized bots can only access the root endpoint",
                         code: "BOT_ENDPOINT_RESTRICTED",
                         allowedEndpoint: "/",
                         timestamp: new Date().toISOString(),
@@ -99,7 +125,7 @@ const botDetector = (req: Request, res: Response, next: NextFunction): void => {
             console.log(`URL: ${botDetails.url}`);
             console.log(`Status: BLOCKED - Unauthorized bot`);
             console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-            
+
             logger.warn("🚫 Bot traffic detected and blocked", {
                 userAgent: botDetails.userAgent,
                 ip: botDetails.ip,
@@ -107,6 +133,10 @@ const botDetector = (req: Request, res: Response, next: NextFunction): void => {
                 url: botDetails.url,
                 hasCustomHeader: !!customBotHeader,
                 customHeaderValid: customBotHeader === expectedBotToken,
+                headers: {
+                    "x-forwarded-for": req.get("X-Forwarded-For"),
+                    "x-real-ip": req.get("X-Real-IP"),
+                },
             });
 
             // Return error response for unauthorized bots

@@ -57,6 +57,10 @@ const errorHandler = (
         path: req.originalUrl,
         method: req.method,
         ip: req.ip,
+        headers: {
+            "x-forwarded-for": req.get("X-Forwarded-For"),
+            "x-real-ip": req.get("X-Real-IP"),
+        },
         userAgent: req.get("User-Agent"),
         stack: err.stack,
         timestamp: new Date().toISOString(),
