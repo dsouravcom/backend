@@ -9,10 +9,49 @@ export default async function instaCaptionExtractor(
     next: NextFunction
 ): Promise<void> {
     try {
-        const { url } = req.body;
+        const { url, token } = req.body;
 
         if (!url) {
             res.status(400).json({ error: "URL is required" });
+            return;
+        }
+
+        // Verify Cloudflare Turnstile token
+        if (!token) {
+            res.status(400).json({ error: "Turnstile token is required" });
+            return;
+        }
+
+        if (!process.env.TURNSTILE_SECRET_KEY) {
+            logger.error(
+                "Missing Turnstile secret key in environment variables"
+            );
+            res.status(500).json({
+                error: "Service configuration error",
+            });
+            return;
+        }
+
+        try {
+            const turnstileResponse = await axios.post(
+                "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+                {
+                    secret: process.env.TURNSTILE_SECRET_KEY,
+                    response: token,
+                }
+            );
+
+            if (!turnstileResponse.data.success) {
+                res.status(403).json({
+                    error: "Turnstile verification failed. Please try again.",
+                });
+                return;
+            }
+        } catch (turnstileError) {
+            logger.error("Turnstile verification error:", turnstileError);
+            res.status(500).json({
+                error: "Failed to verify captcha. Please try again.",
+            });
             return;
         }
 
