@@ -10,13 +10,6 @@ import logger from "../utils/logger";
  */
 const botDetector = (req: Request, res: Response, next: NextFunction): void => {
     try {
-        // allow whitelisted domains to bypass bot detection
-        const allowedOrigins = process.env.WHITELISTED_DOMAINS;
-        const origin = req.get("Origin") || "";
-        if (allowedOrigins && allowedOrigins.includes(origin)) {
-            return next();
-        }
-
         // Get user agent from request headers
         const userAgent = req.get("User-Agent") || "";
 
@@ -38,6 +31,13 @@ const botDetector = (req: Request, res: Response, next: NextFunction): void => {
                     "x-real-ip": req.get("X-Real-IP"),
                 },
             });
+            return next();
+        }
+
+        // allow whitelisted domains to bypass bot detection
+        const allowedOrigins = process.env.WHITELISTED_DOMAINS;
+        const origin = req.get("Origin") || "";
+        if (allowedOrigins && allowedOrigins.includes(origin)) {
             return next();
         }
 
