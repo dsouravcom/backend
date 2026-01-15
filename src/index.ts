@@ -12,6 +12,9 @@ import type { CorsOptions } from "./types";
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Trust proxy - required for Railway/Render/Vercel and other platforms
+app.set("trust proxy", 1);
+
 // middleware ----------------------------------------------------------------------------
 // security middlewares
 app.use(helmet());
@@ -38,7 +41,7 @@ const corsOptions: CorsOptions = {
             callback(null, true);
             return;
         }
-        
+
         // Check if the origin is allowed
         if (allowedOrigins && allowedOrigins.includes(origin)) {
             callback(null, true);
