@@ -10,6 +10,13 @@ import logger from "../utils/logger";
  */
 const botDetector = (req: Request, res: Response, next: NextFunction): void => {
     try {
+        // allow whitelisted domains to bypass bot detection
+        const allowedOrigins = process.env.WHITELISTED_DOMAINS;
+        const origin = req.get("Origin") || "";
+        if (allowedOrigins && allowedOrigins.includes(origin)) {
+            return next();
+        }
+
         // Get user agent from request headers
         const userAgent = req.get("User-Agent") || "";
 
@@ -40,127 +47,66 @@ const botDetector = (req: Request, res: Response, next: NextFunction): void => {
         if (isBotDetected) {
             // Check if it's an authorized bot with custom header
             if (customBotHeader === expectedBotToken) {
-                // Allow access only to root endpoint
-                if (req.originalUrl === "/" || req.path === "/") {
-                    console.log("🤖 AUTHORIZED BOT - Root access granted");
-                    console.log(
-                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-                    );
-                    console.log(`Timestamp: ${new Date().toISOString()}`);
-                    console.log(
-                        `IP Address: ${req.ip || req.socket?.remoteAddress}`
-                    );
-                    console.log(`User Agent: ${userAgent}`);
-                    console.log(`Method: ${req.method}`);
-                    console.log(`URL: ${req.originalUrl}`);
-                    console.log(`Status: AUTHORIZED - Root access only`);
-                    console.log(
-                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-                    );
-
-                    return next();
-                } else {
-                    // Authorized bot trying to access non-root endpoint
-                    logger.warn(
-                        "🚫 Authorized bot blocked - Non-root endpoint access attempt",
-                        {
-                            userAgent: userAgent,
-                            ip: req.ip || req.socket?.remoteAddress,
-                            method: req.method,
-                            url: req.originalUrl,
-                            attemptedEndpoint: req.originalUrl,
-                            headers: {
-                                "x-forwarded-for": req.get("X-Forwarded-For"),
-                                "x-real-ip": req.get("X-Real-IP"),
-                            },
-                        }
-                    );
-
-                    console.log(
-                        "🤖 AUTHORIZED BOT BLOCKED - Non-root access attempt"
-                    );
-                    console.log(
-                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-                    );
-                    console.log(`Timestamp: ${new Date().toISOString()}`);
-                    console.log(
-                        `IP Address: ${req.ip || req.socket?.remoteAddress}`
-                    );
-                    console.log(`User Agent: ${userAgent}`);
-                    console.log(`Attempted URL: ${req.originalUrl}`);
-                    console.log(`Status: BLOCKED - Only root endpoint allowed`);
-                    console.log(
-                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-                    );
-
-                    res.status(403).json({
-                        error: "Access Denied",
-                        message:
-                            "Authorized bots can only access the root endpoint",
-                        code: "BOT_ENDPOINT_RESTRICTED",
-                        allowedEndpoint: "/",
-                        timestamp: new Date().toISOString(),
+                // only allow if accessing the root endpoint
+                if (req.path === "/") {
+                    logger.info("✅ Authorized bot access granted", {
+                        userAgent: userAgent,
+                        ip: req.ip || req.socket?.remoteAddress,
+                        method: req.method,
+                        url: req.originalUrl,
+                        hasCustomHeader: true,
+                        headers: {
+                            "x-forwarded-for": req.get("X-Forwarded-For"),
+                            "x-real-ip": req.get("X-Real-IP"),
+                        },
                     });
-                    return;
+                    return next();
                 }
+                // Deny access for authorized bots to non-root endpoints
+                logger.warn(
+                    "🚫 Authorized bot attempted access to non-root endpoint",
+                    {
+                        userAgent: userAgent,
+                        ip: req.ip || req.socket?.remoteAddress,
+                        method: req.method,
+                        url: req.originalUrl,
+                    }
+                );
+            } else {
+                logger.warn("🚫 Bot traffic detected and blocked", {
+                    userAgent: userAgent,
+                    ip: req.ip || req.socket?.remoteAddress,
+                    method: req.method,
+                    url: req.originalUrl,
+                    hasCustomHeader: !!customBotHeader,
+                    customHeaderValid: customBotHeader === expectedBotToken,
+                    headers: {
+                        "x-forwarded-for": req.get("X-Forwarded-For"),
+                        "x-real-ip": req.get("X-Real-IP"),
+                    },
+                });
+
+                // Return error response for unauthorized bots
+                res.status(403).json({
+                    error: "Access Denied",
+                    message: "Bot traffic is not allowed",
+                    code: "BOT_DETECTED",
+                    timestamp: new Date().toISOString(),
+                });
+                return;
             }
-
-            // Regular bot detection and blocking
-            const botDetails = {
-                timestamp: new Date().toISOString(),
-                ip: req.ip || req.socket?.remoteAddress,
-                userAgent: userAgent,
-                method: req.method,
-                url: req.originalUrl,
-                headers: req.headers,
-                blocked: true,
-            };
-
-            console.log("🤖 BOT DETECTED AND BLOCKED:");
-            console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-            console.log(`Timestamp: ${botDetails.timestamp}`);
-            console.log(`IP Address: ${botDetails.ip}`);
-            console.log(`User Agent: ${botDetails.userAgent}`);
-            console.log(`Method: ${botDetails.method}`);
-            console.log(`URL: ${botDetails.url}`);
-            console.log(`Status: BLOCKED - Unauthorized bot`);
-            console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
-            logger.warn("🚫 Bot traffic detected and blocked", {
-                userAgent: botDetails.userAgent,
-                ip: botDetails.ip,
-                method: botDetails.method,
-                url: botDetails.url,
-                hasCustomHeader: !!customBotHeader,
-                customHeaderValid: customBotHeader === expectedBotToken,
-                headers: {
-                    "x-forwarded-for": req.get("X-Forwarded-For"),
-                    "x-real-ip": req.get("X-Real-IP"),
-                },
-            });
-
-            // Return error response for unauthorized bots
-            res.status(403).json({
-                error: "Access Denied",
-                message: "Bot traffic is not allowed",
-                code: "BOT_DETECTED",
-                timestamp: botDetails.timestamp,
-            });
-            return;
         }
 
         // If not a bot, continue to next middleware
         next();
     } catch (error) {
         // Handle any errors in bot detection
-        console.error("❌ Error in bot detection middleware:", error);
         logger.error("❌ Error in bot detection middleware", {
             error: error instanceof Error ? error.message : "Unknown error",
             stack: error instanceof Error ? error.stack : "No stack trace",
         });
 
         // In case of error, allow the request to continue
-        // You can change this behavior based on your security requirements
         next();
     }
 };
