@@ -62,11 +62,46 @@ export default async function instaCaptionExtractor(
             return;
         }
 
-        // Make a GET request to the URL
-        const response = await axios.get(url);
+        // Make a GET request with browser-like headers to avoid being blocked
+        const response = await axios.get(url, {
+            timeout: 15000, // 15 seconds timeout
+            headers: {
+                "User-Agent":
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Accept-Encoding": "gzip, deflate, br",
+                Connection: "keep-alive",
+                "Upgrade-Insecure-Requests": "1",
+                "Sec-Fetch-Dest": "document",
+                "Sec-Fetch-Mode": "navigate",
+                "Sec-Fetch-Site": "none",
+                "Cache-Control": "max-age=0",
+            },
+            maxRedirects: 5,
+            validateStatus: (status) => status < 500, // Don't throw on 4xx errors
+        });
 
         // Load HTML content into Cheerio
         const $ = load(response.data);
+
+        // Check if Instagram returned an error page
+        if (response.status === 404) {
+            res.status(404).json({
+                error: "Instagram post not found. Please check if the URL is correct and the post is public.",
+            });
+            return;
+        }
+
+        if (response.status === 403 || response.status === 429) {
+            logger.warn(
+                `Instagram blocked request with status ${response.status}`
+            );
+            res.status(503).json({
+                error: "Instagram is blocking Please try again later!",
+            });
+            return;
+        }
 
         // Extract metadata (example: title and description)
         // const title = $('head title').text();
@@ -75,6 +110,15 @@ export default async function instaCaptionExtractor(
         // split it to get original caption
         const str = description?.split(":").slice(1);
         const result = str?.join(":");
+
+        // Check if caption was successfully extracted
+        if (!result) {
+            logger.warn("No caption found in Instagram post");
+            res.status(404).json({
+                error: "Caption not found. The post might be private or have no caption.",
+            });
+            return;
+        }
 
         // log a message
         logger.info("Caption extracted successfully");
